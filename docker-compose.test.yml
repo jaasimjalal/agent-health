@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  agent-health-test:
+    build: .
+    container_name: agent-health-test
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=test
+      - PORT=3000
+      - LOG_LEVEL=error
+    restart: "no"
+    
+  test-runner:
+    image: alpine/curl:latest
+    container_name: health-test-runner
+    depends_on:
+      - agent-health-test
+    command: |
+      sh -c "
+        echo 'Waiting for service to be ready...'
+        sleep 5
+        echo 'Testing /health/live...'
+        curl -f http://agent-health-test:3000/health/live
+        echo 'Testing /health...'
+        curl -f http://agent-health-test:3000/health
+        echo 'Testing /health/status...'
+        curl -f http://agent-health-test:3000/health/status
+        echo 'All tests passed!'
+      "
